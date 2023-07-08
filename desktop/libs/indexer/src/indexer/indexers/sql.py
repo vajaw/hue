@@ -230,7 +230,7 @@ class SQLIndexer(object):
         'overwrite': False,
         'partition_columns': [(partition['name'], partition['partitionValue']) for partition in partition_columns],
       }
-      query_server_config = dbms.get_query_server_config(name=source_type)
+      query_server_config = dbms.get_query_server_config(name=source_type, connector=destination.get('compute'))
       db = dbms.get(self.user, query_server=query_server_config)
       sql += "\n\n%s;" % db.load_data(database, table_name, form_data, None, generate_ddl_only=True)
 

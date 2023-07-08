@@ -25,6 +25,7 @@ import uuid
 
 from django.utils.encoding import smart_str
 
+from beeswax.models import Compute
 from desktop.auth.backend import is_admin
 from desktop.conf import TASK_SERVER, has_connectors
 from desktop.lib import export_csvxls
@@ -406,6 +407,9 @@ def patch_snippet_for_connector(snippet):
   Connector backward compatibility switcher.
   # TODO Connector unification
   """
+  if snippet['type'] == 'hive-compute' or snippet['type'] == 'impala-compute':
+    # No patching is needed
+    return
   if snippet.get('connector') and snippet['connector'].get('type'):
     if snippet['connector']['dialect'] != 'hplsql':   # this is a workaround for hplsql describe not working
       snippet['type'] = snippet['connector']['type']  # To rename to 'id'
@@ -430,7 +434,10 @@ def get_api(request, snippet):
   if has_connectors() and snippet.get('type') == 'hello' and is_admin(request.user):
     interpreter = snippet.get('interpreter')
   else:
-    interpreter = get_interpreter(connector_type=connector_name, user=request.user)
+    if snippet.get('type') in ('hive-compute', 'impala-compute'):
+      interpreter = Compute.objects.get(id=snippet['id']).to_dict()
+    else:
+      interpreter = get_interpreter(connector_type=connector_name, user=request.user)
 
   interface = interpreter['interface']
 
