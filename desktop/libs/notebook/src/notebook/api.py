@@ -162,7 +162,7 @@ def _execute_notebook(request, notebook, snippet):
         notebook['sessions'] = pre_execute_sessions
 
       # Retrieve and remove the result from the handle
-      if response['handle'].get('sync'):
+      if response['handle'] and response['handle'].get('sync'):
         result = response['handle'].pop('result')
     finally:
       if historify:
@@ -180,7 +180,7 @@ def _execute_notebook(request, notebook, snippet):
             }
             notebook_executable['operationId'] = history.uuid
 
-        if 'handle' in response: # No failure
+        if response.get('handle'): # No failure
           if 'result' not in _snippet: # Editor v2
             _snippet['result'] = {}
           _snippet['result']['handle'] = response['handle']
@@ -750,7 +750,11 @@ def autocomplete(request, server=None, database=None, table=None, column=None, n
 
   # Passed by check_document_access_permission but unused by APIs
   notebook = json.loads(request.POST.get('notebook', '{}'))
-  snippet = json.loads(request.POST.get('snippet', '{}'))
+  cluster = json.loads(request.POST.get('cluster', '{}'))
+  if cluster and cluster.get('type') in ('hive-compute', 'impala-compute'):
+    snippet = cluster
+  else:
+    snippet = json.loads(request.POST.get('snippet', '{}'))
   action = request.POST.get('operation', 'schema')
 
   try:
