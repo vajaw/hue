@@ -110,7 +110,7 @@ def get_metastore():
       LOG.error('Hue requires a remote metastore configuration')
   return _METASTORE_LOC_CACHE
 
-
+# 从 hiveserver2 服务 hive-site.xml文件的 hive.server2.authentication.kerberos.principal 提取 principal
 def get_hiveserver2_kerberos_principal(hostname_or_ip):
   """
   Retrieves principal for HiveServer 2.

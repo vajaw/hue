@@ -128,6 +128,8 @@ def get_query_server_config(name='beeswax', server=None, cluster=None):
         'auth_password': AUTH_PASSWORD.get()
     }
   else:
+    ## hue在连接大数据组件时，如果不是impala、hms 服务，那么hiveserver2、kyuubi等服务的princpal
+    # 将从 hiveserver2 服务 hive-site.xml文件的 hive.server2.authentication.kerberos.principal提取
     kerberos_principal = hive_site.get_hiveserver2_kerberos_principal(HIVE_SERVER_HOST.get())
     query_server = {
         'server_name': 'beeswax',
