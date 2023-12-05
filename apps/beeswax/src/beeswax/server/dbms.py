@@ -49,6 +49,33 @@ DBMS_CACHE = {}
 DBMS_CACHE_LOCK = threading.Lock()
 
 
+"""
+这段Python代码是从Hue（Hadoop User Experience）应用程序中提取的，主要用于创建和缓存不同数据库管理系统（DBMS）客户端实例。代码的主要目的是根据用户和查询服务器的配置来获取相应的数据库客户端。下面是代码的主要组成和功能：
+
+全局缓存:
+
+DBMS_CACHE 和 DBMS_CACHE_LOCK 是全局变量，分别用于缓存DBMS客户端实例和提供线程安全的访问。
+获取查询服务器配置:
+
+如果没有提供具体的 query_server 配置，函数会调用 get_query_server_config 来获取默认的或基于特定集群的配置。
+线程安全的缓存访问:
+
+使用 DBMS_CACHE_LOCK 来确保在修改 DBMS_CACHE 时的线程安全。
+创建DBMS客户端实例:
+
+根据 query_server 的 server_name 来确定创建哪种类型的DBMS客户端。
+对于Impala，使用 ImpalaDbms 和 ImpalaServerClient。
+对于Hive Metastore Server（HMS），使用 HiveMetastoreClient。
+对于其他类型（如HiveServer2），使用 HiveServerClient。
+缓存和重用客户端实例:
+
+如果对应用户和查询服务器的客户端实例已存在于缓存中，直接返回该实例以避免重复创建。
+如果不存在，创建新的实例并添加到缓存中。
+返回DBMS客户端:
+
+函数返回对应的DBMS客户端实例，可以用于执行数据库操作。
+这段代码的关键点在于通过缓存机制优化性能，避免了对同一用户和同一类型数据库的重复连接创建，同时确保了线程安全。这对于提高Hue在处理多用户和多数据库环境下的效率非常重要。
+"""
 def get(user, query_server=None, cluster=None):
   global DBMS_CACHE
   global DBMS_CACHE_LOCK
@@ -71,6 +98,7 @@ def get(user, query_server=None, cluster=None):
       elif query_server['server_name'] == 'hms':
         from beeswax.server.hive_metastore_server import HiveMetastoreClient
         DBMS_CACHE[user.id][query_server['server_name']] = HiveServer2Dbms(HiveMetastoreClient(query_server, user), QueryHistory.SERVER_TYPE[1][0])
+      ## hue 创建 kyuubi 客户端入口
       else:
         from beeswax.server.hive_server2_lib import HiveServerClient
         DBMS_CACHE[user.id][query_server['server_name']] = HiveServer2Dbms(HiveServerClientCompatible(HiveServerClient(query_server, user)), QueryHistory.SERVER_TYPE[1][0])
@@ -120,6 +148,7 @@ def get_query_server_config(name='beeswax', server=None, cluster=None):
   if name == 'sparksql': # Spark SQL is almost the same as Hive
     from spark.conf import SQL_SERVER_HOST as SPARK_SERVER_HOST, SQL_SERVER_PORT as SPARK_SERVER_PORT
 
+    ## 获取到 kyuubi 服务端的主机名与端口
     query_server.update({
         'server_name': 'sparksql',
         'server_host': SPARK_SERVER_HOST.get(),
